@@ -9,6 +9,7 @@ from gmplot.writer import _Writer
 
 from gmplot.drawables.grid import _Grid
 from gmplot.drawables.ground_overlay import _GroundOverlay
+from gmplot.drawables.display_KML import _DisplayKML
 from gmplot.drawables.heatmap import _Heatmap
 from gmplot.drawables.map import _Map
 from gmplot.drawables.marker_dropper import _MarkerDropper
@@ -718,6 +719,17 @@ class GoogleMapPlotter(object):
             opacity=_get(kwargs, 'opacity', 1.0)
         ))
 
+    def display_KML(self, url, **kwargs):
+        '''
+        Overlay a KML from a given URL onto the map.
+
+        Args:
+            url (str): URL of KML to overlay.
+        '''
+        self._drawables.append(_DisplayKML(
+            url
+        ))
+        
     def polygon(self, lats, lngs, **kwargs):
         '''
         Plot a polygon.
