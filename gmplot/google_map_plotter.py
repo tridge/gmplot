@@ -117,6 +117,15 @@ class GoogleMapPlotter(object):
             fit_bounds=_get(kwargs, 'fit_bounds')
         )
 
+        # options settable with set_option and get_option
+        self.options = {
+            'map_width' : '100%',
+            'map_height' : '100%',
+        }
+
+        # support for add_custom()
+        self._custom = {}
+
         self._drawables = []
         self._markers = []
         self._marker_dropper = None
@@ -228,6 +237,25 @@ class GoogleMapPlotter(object):
         latlng_dict = response['results'][0]['geometry']['location']
         return latlng_dict['lat'], latlng_dict['lng']
 
+    def set_option(self, option, value):
+        '''
+        Set a global option
+
+        Args:
+           option: option name
+           value: option value
+        '''
+        self.options[option] = value
+
+    def get_option(self, option):
+        '''
+        Get a global option. Returns option or None
+
+        Args:
+           option: option name
+        '''
+        return self.options.get(option, None)
+        
     def text(self, lat, lng, text, **kwargs):
         '''
         Write a text label.
@@ -729,7 +757,19 @@ class GoogleMapPlotter(object):
         self._drawables.append(_DisplayKML(
             url
         ))
-        
+
+    def add_custom(self, custom_type, content):
+        '''
+        add custom content. If you add multiple times with the same type they are appended
+
+        Args:
+            custom_type: one of 'html_head', 'html_top', 'html_bottom', 'js'
+            content: content to add
+        '''
+        if not custom_type in self._custom:
+            self._custom[custom_type] = ''
+        self._custom[custom_type] += content
+
     def polygon(self, lats, lngs, **kwargs):
         '''
         Plot a polygon.
@@ -912,14 +952,29 @@ class GoogleMapPlotter(object):
             [drawable.write(w) for drawable in self._drawables]
             [marker.write(w, context) for marker in self._markers]
             if self._marker_dropper: self._marker_dropper.write(w, context)
+
+            # possibly add custom javascript
+            custom_js = self._custom.get('js',None)
+            if custom_js is not None:
+                w.write(custom_js)
+
             w.dedent()
             w.write('}')
             w.dedent()
-            w.write('''
+
+            # see if the script wants any custom HTML
+            custom_html_head = self._custom.get('html_head','')
+            custom_html_top = self._custom.get('html_top','')
+            custom_html_bottom = self._custom.get('html_bottom','')
+
+            w.write(f'''
                 </script>
+                {custom_html_head}
                 </head>
                 <body style="margin:0px; padding:0px;" onload="initialize()">
-                    <div id="map_canvas" style="width: 100%; height: 100%;" />
+                    {custom_html_top}
+                    <div id="map_canvas" style="width: {self.options['map_width']}; height: {self.options['map_height']};" />
+                    {custom_html_bottom}
                 </body>
                 </html>
             ''')
